@@ -1,0 +1,13 @@
+C:\Users\Nikita\source\repos\Hash\Hash\bin\Debug\netcoreapp3.1\Hash.exe
+C:\Users\Nikita\source\repos\Hash\Hash\bin\Debug\netcoreapp3.1\Hash.deps.json
+C:\Users\Nikita\source\repos\Hash\Hash\bin\Debug\netcoreapp3.1\Hash.runtimeconfig.json
+C:\Users\Nikita\source\repos\Hash\Hash\bin\Debug\netcoreapp3.1\Hash.runtimeconfig.dev.json
+C:\Users\Nikita\source\repos\Hash\Hash\bin\Debug\netcoreapp3.1\Hash.dll
+C:\Users\Nikita\source\repos\Hash\Hash\bin\Debug\netcoreapp3.1\Hash.pdb
+C:\Users\Nikita\source\repos\Hash\Hash\obj\Debug\netcoreapp3.1\Hash.csprojAssemblyReference.cache
+C:\Users\Nikita\source\repos\Hash\Hash\obj\Debug\netcoreapp3.1\Hash.AssemblyInfoInputs.cache
+C:\Users\Nikita\source\repos\Hash\Hash\obj\Debug\netcoreapp3.1\Hash.AssemblyInfo.cs
+C:\Users\Nikita\source\repos\Hash\Hash\obj\Debug\netcoreapp3.1\Hash.csproj.CoreCompileInputs.cache
+C:\Users\Nikita\source\repos\Hash\Hash\obj\Debug\netcoreapp3.1\Hash.dll
+C:\Users\Nikita\source\repos\Hash\Hash\obj\Debug\netcoreapp3.1\Hash.pdb
+C:\Users\Nikita\source\repos\Hash\Hash\obj\Debug\netcoreapp3.1\Hash.genruntimeconfig.cache
