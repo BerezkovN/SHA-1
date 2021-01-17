@@ -1,57 +1,22 @@
 ﻿using System;
-using System.Collections;
-using System.Security.Cryptography;
+using System.Text;
 
 namespace Hash
 {
     public static class Operations
     {
-        //Dude fuck, how much did they pay programmers to fucking implement this fucking piece of shit and garbage. I just want to fucking shoot everyone who was part of the team who implemented this garbage. I can do better for free dude, I'm so pissed off 
-
-        //public static BitArray ROTL(BitArray word, int n, int w)
-        //{
-        //    var left = word.RightShift(n);
-        //    foreach (bool b in left)
-        //    {
-        //        Console.Write(b ? 1 : 0);
-        //    }
-        //    Console.WriteLine();
-        //    var right = word.LeftShift(w - n);
-        //    foreach (bool b in right)
-        //    {
-        //        Console.Write(b ? 1 : 0);
-        //    }
-        //    Console.WriteLine();
-        //    return (left.Or(right));
-        //}
-        public static uint ROTL(uint word, int n)
+        public static uint ROTL(uint original, int bits)
         {
-            return (word << n) | (word >> (32 - n));
+            return (original << bits) | (original >> (32 - bits));
         }
 
-        public static uint ROTR(uint word, int n)
+        public static uint ROTR(uint original, int bits)
         {
-            return (word >> n) | (word << (32 - n));
-        }
-
-        public static BitArray ROTL(BitArray word, int n)
-        {
-            BitArray left = (BitArray)(word.Clone());
-            BitArray right = (BitArray)(word.Clone());
-
-            return (left.RightShift(n).Or(right.LeftShift(word.Count - n)));
-        }
-
-        public static BitArray ROTR(BitArray word, int n)
-        {
-            BitArray left = (BitArray)(word.Clone());
-            BitArray right = (BitArray)(word.Clone());
-
-            return (left.LeftShift(n).Or(right.RightShift(word.Count - n)));
+            return (original >> bits) | (original << (32 - bits));
         }
     }
 
-    public static class SHA12
+    public static class SHA1
     {
         static uint h0 = 0x67452301;
         static uint h1 = 0xefcdab89;
@@ -59,7 +24,7 @@ namespace Hash
         static uint h3 = 0x10325476;
         static uint h4 = 0xc3d2e1f0;
 
-        static BitArray[] blocks;
+        static byte[][] blocks;
 
         static void ResetValues()
         {
@@ -70,123 +35,98 @@ namespace Hash
             h4 = 0xc3d2e1f0;
         }
 
-        static void Print(BitArray b)
+        static void Print ()
         {
-            foreach(bool boo in b)
+            foreach(var b in blocks[0])
             {
-                Console.Write(boo ? 1 : 0);
+                Console.Write(Convert.ToString(b, 2) + " ");
             }
-            Console.WriteLine();
         }
 
-        static BitArray PaddedBlock(BitArray message)
+        static void ParsingMessage(byte[] message)
         {
-            BitArray bitArray = new BitArray(512);
-            int length = message.Count - (blocks.Length - 1) * 512;
+            int iter = (int)Math.Ceiling((double)message.Length / 64);
+            int freebytes = iter * 64 - message.Length;
 
-            if (length > 448)
-                throw new Exception("Imagine that I implemented this part of code");
-
-            for (int ind = 0; ind < length; ind++)
+            //We need 1 byte to set one at the end of the message and also we need 8 bytes for length
+            if (freebytes >= 9)
             {
-                bitArray[ind] = message[(blocks.Length - 1) * 512 + ind];
+                blocks = new byte[iter][];
             }
-
-            bitArray[length] = true;
-
-            BitArray messageLength = new BitArray(new int[] { message.Count });
-
-            for (int ind = length + 1; ind < 448 + 32; ind++) {
-                bitArray[ind] = false;
-            }
-
-            for (int ind = 480 /*448 + 32*/; ind < 512; ind++)
-            {
-                bitArray[ind] = messageLength[31 - (ind - 480)];
-            }
-
-            return bitArray;
-        }
-
-        static void ParsingMessage(BitArray message)
-        {
-            if (message.Count % 512 == 0)
-                blocks = new BitArray[message.Count / 512];
             else
-                blocks = new BitArray[(int)Math.Floor((double)message.Count / 512) + 1];
-
-            for (int iter = 0; iter < blocks.Length; iter++)
             {
-                BitArray block;
+                throw new NotImplementedException();
+            }
 
-                if (iter + 1 == blocks.Length && message.Count % 512 != 0)
-                {
-                    block = PaddedBlock(message);
-                }
-                else
-                {
-                    block = new BitArray(512);
+            for (int ind = 0; ind < iter; ind++)
+            {
+                blocks[ind] = new byte[64]; //64 * 8 = 512 bits for block
 
-                    for (int ind = 0; ind < 512; ind++)
+                if (ind + 1 == iter && message.Length % 64 != 0)
+                {
+                    //Padding the message
+                    for (int i = 0; i < blocks[ind].Length - freebytes; i++)
                     {
-                        block[ind] = message[ind + iter * 512];
+                        blocks[ind][i] = message[i + ind * 64];
                     }
+
+                    //Appending the bit “1” to the end of the message
+                    blocks[ind][blocks[ind].Length - freebytes] = (byte)1 << 7;
+
+                    //Appending the 64-bit block
+                    byte[] length = Converter.LongToByte((long)message.Length * 8);
+
+                    for (int i = 0; i < length.Length; i++)
+                    {
+                        blocks[ind][blocks[ind].Length - length.Length + i] = length[i];
+                    }
+
+                    break;
                 }
 
-                blocks[iter] = block;
+                //Setting blocks
+                for (int i = 0; i < blocks[ind].Length; i++)
+                {
+                    blocks[ind][i] = message[i + ind * 64];
+                }
             }
         }
 
         static uint K(int t)
         {
-            if (t <= 19)
-            {
+            if (t >= 0 && t <= 19)
                 return 0x5a827999;
-            }
-            else if (t <= 39)
-            {
+
+            if (t >= 20 && t <= 39)
                 return 0x6ed9eba1;
-            }
-            else if (t <= 59)
-            {
+
+            if (t >= 40 && t <= 59)
                 return 0x8f1bbcdc;
-            }
-            else if (t <= 79)
-            {
+
+            if (t >= 60 && t <= 79)
                 return 0xca62c1d6;
-            }
-            else
-            {
-                throw new Exception("Something went wrong");
-            }
+
+            throw new Exception();
         } 
 
         static uint f(uint x, uint y, uint z, int t)
         {
-            if (t <= 19)
-            {
+            if (t >= 0 && t <= 19)
                 return (x & y) ^ (~x & z);
-            }
-            else if (t <= 39)
-            {
+
+            if (t >= 20 && t <= 39)
                 return x ^ y ^ z;
-            }
-            else if (t <= 59)
-            {
+
+            if (t >= 40 && t <= 59)
                 return (x & y) ^ (x & z) ^ (y & z);
-            }
-            else if (t <= 79)
-            {
+
+            if (t >= 60 && t <= 79)
                 return x ^ y ^ z;
-            }
-            else
-            {
-                throw new Exception("Something went wrong");
-            }
-            
+
+            throw new Exception();
         }
-        //Obeme putin vodka
-        public static string Generate(BitArray message)
+        
+        public static byte[] Generate(byte[] message)
         {
             ResetValues();
             ParsingMessage(message);
@@ -194,23 +134,24 @@ namespace Hash
             for (int i = 0; i < blocks.Length; i++)
             {
                 //Message schedule
-                BitArray[] W = new BitArray[80];
-                BitArray[] M = Converter.BlockToWords(blocks[i]);
+                uint[] W = new uint[80];
 
-                for (int t = 0; t < 80; t++)
+                for (int t = 0; t < W.Length; t++)
                 {
                     if (t <= 15)
                     {
-                        W[t] = M[t];
+                        byte[] word = new byte[4];
+
+                        for (int ind = 0; ind < word.Length; ind++)
+                        {
+                            word[ind] = blocks[i][ind + t * 4];
+                        }
+
+                        W[t] = Converter.BytesToUint32(word);
                     }
                     else
                     {
-                        Print(W[t - 3]);
-                        Print(W[t - 8]);
-                        Print(W[t - 14]);
-                        Print(W[t - 16]);
-                        W[t] = Operations.ROTL(W[t - 3].Xor(W[t - 8].Xor(W[t - 14].Xor(W[t - 16]))), 1);
-                        Print(W[t]);
+                        W[t] = Operations.ROTL(W[t - 3] ^ W[t - 8] ^ W[t - 14] ^ W[t - 16], 1);
                     }
                 }
 
@@ -222,7 +163,7 @@ namespace Hash
 
                 for (int t = 0; t < 80; t++)
                 {
-                    uint T = Operations.ROTL(a, 5) + f(b, c, d, t) + e + K(t) + Converter.WordToUint(W[t]);
+                    uint T = Operations.ROTL(a, 5) + f(b, c, d, t) + e + K(t) + W[t];
                     e = d;
                     d = c;
                     c = Operations.ROTL(b, 30);
@@ -230,91 +171,51 @@ namespace Hash
                     a = T;
                 }
 
-                h0 = a + h0;
-                h1 = b + h1;
-                h2 = c + h2;
-                h3 = d + h3;
-                h4 = e + h4;
+                h0 += a;
+                h1 += b;
+                h2 += c;
+                h3 += d;
+                h4 += e;
             }
 
-            return h0.ToString("x") + h1.ToString("x") + h2.ToString("x") + h3.ToString("x") + h4.ToString("x");
+            return Converter.UIntArrayToByteArray(new uint[] { h0, h1, h2, h3, h4 });
         }
     }
 
+    //I guess the name fully describes what it does
     public static class Converter
     {
-        public static uint WordToUint(BitArray bitArray)
+        public static byte[] UIntArrayToByteArray(uint[] words)
         {
-            uint res = 0;
+            byte[] result = new byte[words.Length * 4];
 
-            for (int ind = 0; ind < bitArray.Count; ind++)
+            for (int a = 0; a < words.Length; a++)
             {
-                res += (uint)Math.Pow(2, ind) * (uint)(bitArray[bitArray.Count - ind - 1] ? 1 : 0);
-            }
+                byte[] word = BitConverter.GetBytes(words[a]);
+                Array.Reverse(word);
 
-            return res;
-        }
-
-        public static BitArray[] BlockToWords(BitArray block)
-        {
-            BitArray[] words = new BitArray[16 /*512÷32*/];
-
-            for (int iter = 0; iter < 16; iter++)
-            {
-                words[iter] = new BitArray(32);
-
-                for (int ind = 0; ind < 32; ind++)
+                for (int b = 0; b < 4; b++)
                 {
-                    words[iter][ind] = block[ind + iter * 32];
+                    result[b + a * 4] = word[b];
                 }
             }
 
-            return words;
+            return result;
         }
 
-        public static BitArray StringToBitArray(string s)
+        public static uint BytesToUint32(byte[] bytes)
         {
-            byte[] bytearray = new byte[s.Length];
-
-            for (int ind = 0; ind < s.Length; ind++)
-            {
-                if (s[ind] > 255)
-                    throw new Exception("StringToBitArray consideres characters to be 8bit size");
-
-                bytearray[ind] = ReversedByte((byte)s[ind]);
-            }
-
-            return new BitArray(bytearray);
+            return ((uint)bytes[0] << 24) | ((uint)bytes[1] << 16) | ((uint)bytes[2] << 8) | ((uint)bytes[3]);
         }
 
-        public static byte ReversedByte(byte b)
+        public static byte[] LongToByte(long l)
         {
-            BitArray input = new BitArray(new byte[] { b });
-            BitArray output = new BitArray(8);
-
-            for (int ind = 0; ind < input.Count; ind++)
-            {
-                output[ind] = input[input.Count - ind - 1];
-            }
-
-            return ConvertToByte(output);
+            byte[] array = BitConverter.GetBytes(l);
+            Array.Reverse(array);
+            return array;
         }
 
-        public static byte ConvertToByte(BitArray bits)
-        {
-            if (bits.Count != 8)
-            {
-                throw new ArgumentException("bits");
-            }
-            byte[] bytes = new byte[1];
-            bits.CopyTo(bytes, 0);
-            return bytes[0];
-        }
-    }
-
-    class Program
-    {
-        static byte[] StringToByte(string input)
+        public static byte[] StringToByte(string input)
         {
             byte[] b = new byte[input.Length];
 
@@ -326,19 +227,43 @@ namespace Hash
             return b;
         }
 
+        public static string ToHex(this byte[] bytes)
+        {
+            StringBuilder result = new StringBuilder(bytes.Length * 2);
+
+            for (int i = 0; i < bytes.Length; i++)
+                result.Append(bytes[i].ToString("x2"));
+
+            return result.ToString();
+        }
+    }
+
+    class Program
+    {
+        static void Test(string s)
+        {
+            byte[] message = Converter.StringToByte(s);
+
+            //Using algorithm that Microsoft guys already did
+            string s1;
+            using (var hash = System.Security.Cryptography.SHA1.Create())
+            {
+                s1 = Converter.ToHex(hash.ComputeHash(message));
+            }
+
+            Console.WriteLine("Microsoft - " + s1);
+
+            //My implemetation
+            string s2 = Converter.ToHex(SHA1.Generate(message));
+
+            Console.WriteLine("Me        - " + s2);
+        }
+
         static void Main(string[] args)
         {
             string input = Console.ReadLine();
 
-            //BitArray bar = Converter.StringToBitArray(input);
-
-            //Console.WriteLine(Converter.WordToUint(bar));
-
-            //Console.WriteLine(SHA1.Generate(bar));
+            Test(input);
         }
-
-        
-
-        
     }
 }
