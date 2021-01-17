@@ -1,4 +1,9 @@
-﻿using System;
+﻿//If you want to understand what is going on here, you should read this
+//https://csrc.nist.gov/csrc/media/publications/fips/180/4/final/documents/fips180-4-draft-aug2014.pdf
+
+//Nikita Berezkov
+
+using System;
 using System.Text;
 
 namespace Hash
@@ -35,20 +40,12 @@ namespace Hash
             h4 = 0xc3d2e1f0;
         }
 
-        static void Print ()
-        {
-            foreach(var b in blocks[0])
-            {
-                Console.Write(Convert.ToString(b, 2) + " ");
-            }
-        }
-
         static void ParsingMessage(byte[] message)
         {
             int iter = (int)Math.Ceiling((double)message.Length / 64);
             int freebytes = iter * 64 - message.Length;
 
-            //We need 1 byte to set one at the end of the message and also we need 8 bytes for length
+            //1 byte to append "1" at the end of the message and 8 bytes to append length
             if (freebytes >= 9)
             {
                 blocks = new byte[iter][];
@@ -74,7 +71,7 @@ namespace Hash
                     blocks[ind][blocks[ind].Length - freebytes] = (byte)1 << 7;
 
                     //Appending the 64-bit block
-                    byte[] length = Converter.LongToByte((long)message.Length * 8);
+                    byte[] length = Converter.LongToByteArray((long)message.Length * 8);
 
                     for (int i = 0; i < length.Length; i++)
                     {
@@ -147,7 +144,7 @@ namespace Hash
                             word[ind] = blocks[i][ind + t * 4];
                         }
 
-                        W[t] = Converter.BytesToUint32(word);
+                        W[t] = Converter.ByteArrayToUInt(word);
                     }
                     else
                     {
@@ -203,19 +200,19 @@ namespace Hash
             return result;
         }
 
-        public static uint BytesToUint32(byte[] bytes)
+        public static uint ByteArrayToUInt(byte[] bytes)
         {
             return ((uint)bytes[0] << 24) | ((uint)bytes[1] << 16) | ((uint)bytes[2] << 8) | ((uint)bytes[3]);
         }
 
-        public static byte[] LongToByte(long l)
+        public static byte[] LongToByteArray(long l)
         {
             byte[] array = BitConverter.GetBytes(l);
             Array.Reverse(array);
             return array;
         }
 
-        public static byte[] StringToByte(string input)
+        public static byte[] StringToByteArray(string input)
         {
             byte[] b = new byte[input.Length];
 
@@ -242,7 +239,7 @@ namespace Hash
     {
         static void Test(string s)
         {
-            byte[] message = Converter.StringToByte(s);
+            byte[] message = Converter.StringToByteArray(s);
 
             //Using algorithm that Microsoft guys already did
             string s1;
